@@ -1,0 +1,7 @@
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+!examples/**
+.DS_Store
+sourcemap.json

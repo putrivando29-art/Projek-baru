@@ -1,0 +1,12 @@
+{
+  "name": "RuntimeInspectorAnalyzer",
+  "tree": {
+    "$className": "Folder",
+    "Main": {
+      "$path": "plugin/Main.server.luau"
+    },
+    "SourceAnalyzer": {
+      "$path": "src/ServerStorage/RuntimeInspector/Tools/SourceAnalyzer.luau"
+    }
+  }
+}

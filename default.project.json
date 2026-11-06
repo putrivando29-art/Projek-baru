@@ -1,0 +1,21 @@
+{
+  "name": "RuntimeInspector",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "RuntimeInspectorNet": {
+        "$path": "src/ReplicatedStorage/RuntimeInspectorNet"
+      }
+    },
+    "ServerStorage": {
+      "RuntimeInspector": {
+        "$path": "src/ServerStorage/RuntimeInspector"
+      }
+    },
+    "ServerScriptService": {
+      "RuntimeInspectorServer": {
+        "$path": "src/ServerScriptService/RuntimeInspectorServer"
+      }
+    }
+  }
+}
