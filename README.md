@@ -1,41 +1,20 @@
-# Roblox Runtime Inspector & Security Audit Dashboard
+# Game Scanner — Delta Android
 
-Sistem audit runtime untuk game Roblox **milik Anda sendiri**, berjalan di Play Solo, Start Server, dan Start Player di Roblox Studio. Ditulis dalam Luau, modular, disusun sebagai proyek [Rojo](https://rojo.space/docs/v7/).
+File `Delta.lua` menampilkan satu tombol **SCAN GAME**. Setelah pemindaian selesai, hasil metadata client ditampilkan sebagai JSON. Gunakan **COPY** untuk menyalin (jika executor menyediakan clipboard) atau **DOWNLOAD JSON** untuk menyimpan `GameScan_<PlaceId>.json` (jika executor menyediakan `writefile`).
 
-> Status verifikasi: semua nama kelas, properti, event, dan level security dicek terhadap Roblox API Dump (`Full-API-Dump.json` dari [Roblox-Client-Tracker](https://github.com/MaximumADHD/Roblox-Client-Tracker)) dan dokumentasi resmi [Roblox/creator-docs](https://github.com/Roblox/creator-docs). Kode **belum dijalankan** di Roblox Studio oleh penulisnya (lingkungan pembuatan tidak punya Studio). Jalankan checklist di [docs/04-instalasi-pengujian.md](docs/04-instalasi-pengujian.md) sebelum mengandalkannya.
+## Menjalankan
+1. Buka game milik sendiri / game yang memang Anda berwenang uji.
+2. Jalankan seluruh isi `Delta.lua` melalui executor client.
+3. Tekan **SCAN GAME**, tunggu hingga selesai, lalu Copy atau Download.
 
-## Delta Android (client-only)
+## Batasan penting
+Scanner hanya dapat mengumpulkan data yang direplikasi dan dapat diakses oleh client. Tidak ada cara dari LocalScript client untuk membaca seluruh isi server secara mutlak: `ServerStorage`, `ServerScriptService`, data server-only, serta source Script yang dilindungi tidak dapat diekspor. Pemindaian juga tunduk pada batas node konfigurasi dan kemampuan executor. Hasil tidak boleh dianggap sebagai dump lengkap seluruh server. Untuk inventaris lengkap game milik sendiri, tambahkan komponen server-side melalui Roblox Studio.
 
-Versi siap-tempel untuk Delta Android tersedia di [`standalone/Delta.lua`](standalone/Delta.lua). Jalankan saat sudah berada di dalam game. Lihat [`standalone/README.md`](standalone/README.md) untuk cara pakai dan batasan client-only.
 
-## Dokumen
+## Game Scanner build (Delta Android)
 
-| Bagian | File |
-|---|---|
-| A. Arsitektur, B. Struktur folder, C. Daftar ModuleScript | [docs/01-arsitektur.md](docs/01-arsitektur.md) |
-| D. Kode lengkap | folder `src/`, `plugin/`, `examples/` (indeks per file di docs/02) |
-| E. Fungsi setiap ModuleScript | [docs/02-modul.md](docs/02-modul.md) |
-| Batas data client / server / Studio / tidak teramati (poin 12) | [docs/03-batasan.md](docs/03-batasan.md) |
-| F. Pemasangan, G. Pengujian Play Solo & Start Server, J. Checklist | [docs/04-instalasi-pengujian.md](docs/04-instalasi-pengujian.md) |
-| H. Contoh log (ilustrasi format) | [docs/05-contoh-log.md](docs/05-contoh-log.md) |
-| I. Membaca laporan keamanan & memperbaiki temuan | [docs/06-laporan-keamanan.md](docs/06-laporan-keamanan.md) |
+`Delta.lua` adalah bundle mandiri yang menggunakan modul UI, tema, serializer, explorer, dan auditor yang sudah ada di `src/`. Bundle ini tidak menunggu folder `ReplicatedStorage.RuntimeInspectorNet` di game target; dependensi tersebut dimasukkan langsung ke bundle agar tidak macet saat dijalankan di game lain.
 
-## Ringkas
+Tekan **SCAN GAME** untuk mengumpulkan inventaris instance yang terlihat client, metadata script, atribut, tag, properti terpilih, referensi aset, dan data runtime yang tersedia. Inventaris diekspor hingga 25.000 instance per sesi untuk menjaga penggunaan memori di Android. Jika batas tercapai, laporan menandai `inventoryTruncated`. Gunakan **COPY** atau **DOWNLOAD JSON** untuk seluruh laporan; kotak di layar hanya menampilkan pratinjau agar UI tidak membeku.
 
-```
-ReplicatedStorage/RuntimeInspectorNet     Net (wrapper remote), Schema, Serializer   <- satu-satunya bagian yang direplikasi ke semua client
-ServerStorage/RuntimeInspector            Shared (inspector), ServerData (rahasia), ClientPackage (dashboard), Tools (SourceAnalyzer)
-ServerScriptService/RuntimeInspectorServer bootstrap, AuditLog, InspectorBridge, Security/* (SecureRemote, MovementValidator, CombatAuthority, Honeypot)
-plugin/                                    plugin Studio untuk analisis Source (PluginSecurity)
-```
-
-Dashboard tidak dikirim lewat StarterPlayerScripts. Server meng-clone dashboard ke `PlayerGui` pemain yang terotorisasi saja, karena isi PlayerGui hanya direplikasi ke pemiliknya. Pemain lain tidak menerima kode inspector maupun remote-nya.
-
-## Mulai cepat
-
-```bash
-rojo serve                                    # sync ke Studio (plugin Rojo)
-rojo build plugin.project.json --plugin RuntimeInspectorAnalyzer.rbxm   # plugin Source Analyzer
-```
-
-Di Studio: tekan **Play**, lalu **F6** (atau tombol "Inspector" kiri bawah).
+Data `ServerStorage`, `ServerScriptService`, source `Script`, serta instance yang tidak direplikasi ke client tidak dapat diambil dari LocalScript/executor client. Untuk audit penuh game milik sendiri, pasang komponen server dari proyek Rojo di Roblox Studio.

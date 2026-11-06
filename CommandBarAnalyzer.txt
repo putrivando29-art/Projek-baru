@@ -1,0 +1,3 @@
+-- Tempel SATU baris ini ke Command Bar Roblox Studio (View > Command Bar), lalu Enter.
+-- Command Bar berjalan dengan izin Studio sehingga dapat membaca Script.Source.
+require(game.ServerStorage.RuntimeInspector.Tools.SourceAnalyzer).Run()
