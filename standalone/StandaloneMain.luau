@@ -8,16 +8,17 @@
 ]]
 
 ---------------------------------------------------------------- pengaturan
+-- Delta Android: script berjalan pada sisi client. Data server yang tidak direplikasi
+-- memang tidak dapat dibaca dari executor client.
 local TOGGLE_KEY = Enum.KeyCode.F7
-local ALLOW_IN_LIVE_GAME = false -- true hanya bila Anda paham kode ini ikut terkirim ke client
-local ALLOWED_USER_IDS = {} -- [UserId] = true, dipakai bila ALLOW_IN_LIVE_GAME = true
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-if not RunService:IsStudio() and not (ALLOW_IN_LIVE_GAME and ALLOWED_USER_IDS[player.UserId]) then
+if not player then
+	warn("[RuntimeInspector] LocalPlayer tidak tersedia; jalankan dari dalam game.")
 	return
 end
 
@@ -41,10 +42,30 @@ local AnomalyDetector = __require("AnomalyDetector")
 local New, C = Widgets.New, Theme.Colors
 local MAX = Config.UI.DetailMaxChars
 
+-- Gunakan UI host executor bila tersedia; fallback ke PlayerGui standar.
+local guiParent = nil
+local okGetHui, hui = pcall(function()
+	if type(gethui) == "function" then
+		return gethui()
+	end
+	return nil
+end)
+if okGetHui and hui then
+	guiParent = hui
+else
+	guiParent = player:WaitForChild("PlayerGui")
+end
+
+-- Bersihkan GUI dari eksekusi sebelumnya agar tidak menumpuk.
+pcall(function()
+	local previous = guiParent:FindFirstChild("RuntimeInspectorDelta")
+	if previous then previous:Destroy() end
+end)
+
 local gui = New("ScreenGui", {
-	Name = "RuntimeInspectorStandalone", ResetOnSpawn = false, IgnoreGuiInset = true,
-	DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	Parent = player:WaitForChild("PlayerGui"),
+	Name = "RuntimeInspectorDelta", ResetOnSpawn = false, IgnoreGuiInset = true,
+	DisplayOrder = 9999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	Parent = guiParent,
 }) :: ScreenGui
 
 local function ignore(inst: Instance): boolean
@@ -100,14 +121,20 @@ end
 ---------------------------------------------------------------- jendela
 
 local window = New("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.8, 0.78),
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.96, 0.88),
 	BackgroundColor3 = C.Window, Active = true, Parent = gui,
-}, { Widgets.Corner(10), Widgets.Stroke(), New("UISizeConstraint", { MinSize = Vector2.new(680, 400), MaxSize = Vector2.new(1400, 860) }) })
-local header = New("Frame", { BackgroundColor3 = C.Sidebar, Size = UDim2.new(1, 0, 0, 36), Active = true, Parent = window }, { Widgets.Corner(10), Widgets.Padding(6), Widgets.HList(6) })
-Widgets.Label({ Text = "Runtime Inspector (Standalone Client)", Font = Theme.FontBold, Size = UDim2.new(0, 230, 1, 0), LayoutOrder = 0, Parent = header })
-local tabBar = New("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 26), Parent = window }, { Widgets.HList(4) })
-local content = New("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 74), Size = UDim2.new(1, -16, 1, -82), ClipsDescendants = true, Parent = window })
-local status = Widgets.Label({ Text = "", TextColor3 = C.TextDim, TextSize = Theme.SmallText, Size = UDim2.new(0, 200, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd, LayoutOrder = 20, Parent = header })
+}, { Widgets.Corner(10), Widgets.Stroke(), New("UISizeConstraint", { MinSize = Vector2.new(300, 280), MaxSize = Vector2.new(1400, 900) }) })
+local header = New("Frame", { BackgroundColor3 = C.Sidebar, Size = UDim2.new(1, 0, 0, 36), Active = true, Parent = window }, { Widgets.Corner(10), Widgets.Padding(5), Widgets.HList(2) })
+Widgets.Label({ Text = "Inspector", Font = Theme.FontBold, Size = UDim2.new(0, 68, 1, 0), LayoutOrder = 0, Parent = header })
+local tabBar = New("ScrollingFrame", {
+	BackgroundTransparency = 1, BorderSizePixel = 0,
+	Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 30),
+	CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.X,
+	ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 3,
+	Parent = window,
+}, { Widgets.HList(4) })
+local content = New("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 78), Size = UDim2.new(1, -16, 1, -86), ClipsDescendants = true, Parent = window })
+local status = Widgets.Label({ Text = "", TextColor3 = C.TextDim, TextSize = Theme.SmallText, Size = UDim2.new(0, 1, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd, LayoutOrder = 20, Parent = header })
 
 do -- drag
 	local dragging, start, startPos = false, nil, nil
@@ -129,9 +156,12 @@ do -- drag
 	end)
 end
 
-local launcher = Widgets.Button("Inspector (" .. TOGGLE_KEY.Name .. ")", function()
+local launcher = Widgets.Button("Inspector", function()
 	window.Visible = true
-end, { Position = UDim2.new(0, 12, 1, -40), Size = UDim2.new(0, 150, 0, 28), BackgroundColor3 = C.Accent, TextColor3 = C.AccentText, Visible = false, Parent = gui })
+end, { Position = UDim2.new(0, 12, 1, -48), Size = UDim2.new(0, 112, 0, 36), BackgroundColor3 = C.Accent, TextColor3 = C.AccentText, Visible = false, Parent = gui })
+Widgets.Button("×", function()
+	window.Visible = false
+end, { Size = UDim2.new(0, 24, 0, 24), TextSize = Theme.SmallText, LayoutOrder = 30, Parent = header })
 window:GetPropertyChangedSignal("Visible"):Connect(function()
 	launcher.Visible = not window.Visible
 end)
@@ -386,7 +416,7 @@ local function buildExplorer(frame: Frame)
 	local nameBox = Widgets.TextInput("Nama", { Size = UDim2.new(0, 150, 0, 24), LayoutOrder = 1, Parent = toolbar })
 	local classBox = Widgets.TextInput("ClassName / IsA", { Size = UDim2.new(0, 130, 0, 24), LayoutOrder = 2, Parent = toolbar })
 	local function btn(text: string, order: number, fn: () -> ())
-		Widgets.Button(text, fn, { Size = UDim2.new(0, 64, 0, 24), TextSize = Theme.SmallText, LayoutOrder = order, Parent = toolbar })
+		Widgets.Button(text, fn, { Size = UDim2.new(0, 36, 0, 24), TextSize = Theme.SmallText, LayoutOrder = order, Parent = toolbar })
 	end
 	btn("Cari", 3, function()
 		results.frame.Visible, tree.list.frame.Visible = true, false
@@ -502,7 +532,7 @@ end
 for i, name in TAB_ORDER do
 	tabButtons[name] = Widgets.Button(name, function()
 		selectTab(name)
-	end, { Size = UDim2.new(0, 92, 0, 24), TextSize = Theme.SmallText, LayoutOrder = i, Parent = tabBar })
+	end, { Size = UDim2.new(0, 78, 0, 26), TextSize = Theme.SmallText, LayoutOrder = i, Parent = tabBar })
 end
 
 local function copyText(text: string, label: string)
@@ -521,7 +551,7 @@ local function headerButton(text: string, order: number, fn: () -> ())
 			return
 		end
 		fn()
-	end, { Size = UDim2.new(0, 64, 0, 24), TextSize = Theme.SmallText, LayoutOrder = order, Parent = header })
+	end, { Size = UDim2.new(0, text == "Start" and 40 or 34, 0, 24), TextSize = Theme.SmallText, LayoutOrder = order, Parent = header })
 end
 headerButton("Start", 1, function()
 	startAgent()
@@ -530,7 +560,7 @@ headerButton("Start", 1, function()
 	end
 end)
 headerButton("Stop", 2, stopAgent)
-headerButton("Refresh", 3, function()
+headerButton("Ref", 3, function()
 	if agent.running then
 		task.spawn(function()
 			agent.assets:Scan()
@@ -548,7 +578,7 @@ headerButton("Copy", 4, function()
 	copyText(render({ [cat] = true }), "Copy: " .. tostring(active))
 	exportState.format = saved
 end)
-headerButton("Export", 5, function()
+headerButton("Out", 5, function()
 	local all = {}
 	for _, c in ExportCenter.Categories do
 		all[c] = true
@@ -573,4 +603,4 @@ task.spawn(function()
 	end
 end)
 
-print(Config.LogPrefix .. " standalone client aktif. Tekan " .. TOGGLE_KEY.Name .. " untuk menampilkan/menyembunyikan.")
+print(Config.LogPrefix .. " Delta Android client aktif. Gunakan tombol Inspector di layar.")

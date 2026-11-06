@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 OUT = ROOT / "standalone" / "RuntimeInspector.client.lua"
+DELTA_OUT = ROOT / "standalone" / "Delta.lua"
 MAIN = ROOT / "standalone" / "StandaloneMain.luau"
 
 MODULES = {
@@ -186,7 +187,22 @@ def main() -> None:
     if leftovers:
         sys.exit("sisa dependency eksternal:\n" + "\n".join(leftovers))
     OUT.write_text(out, encoding="utf-8")
+
+    # File siap-tempel untuk executor Android. Kode inti identik dengan standalone;
+    # hanya petunjuk header yang dibedakan. Tidak membutuhkan loadstring/HTTP.
+    delta_out = out.replace(
+        "RuntimeInspector Standalone Client (LocalScript)",
+        "RuntimeInspector Delta Android (client-side)"
+    ).replace(
+        "Pasang: StarterPlayer > StarterPlayerScripts > LocalScript, tempel seluruh isi file ini.",
+        "Delta Android: tempel seluruh isi file ini ke editor executor saat sudah berada di dalam game, lalu Execute."
+    ).replace(
+        "Default hanya aktif di Roblox Studio. Tekan F7 untuk tampil/sembunyi.",
+        "Client-only. UI dapat dibuka melalui tombol Inspector di layar."
+    )
+    DELTA_OUT.write_text(delta_out, encoding="utf-8")
     print(f"OK {OUT.relative_to(ROOT)}: {len(order)} modul, {out.count(chr(10))} baris, {len(out)} byte")
+    print(f"OK {DELTA_OUT.relative_to(ROOT)}: {delta_out.count(chr(10))} baris, {len(delta_out)} byte")
 
 
 if __name__ == "__main__":

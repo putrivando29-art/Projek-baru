@@ -4,6 +4,10 @@ Sistem audit runtime untuk game Roblox **milik Anda sendiri**, berjalan di Play 
 
 > Status verifikasi: semua nama kelas, properti, event, dan level security dicek terhadap Roblox API Dump (`Full-API-Dump.json` dari [Roblox-Client-Tracker](https://github.com/MaximumADHD/Roblox-Client-Tracker)) dan dokumentasi resmi [Roblox/creator-docs](https://github.com/Roblox/creator-docs). Kode **belum dijalankan** di Roblox Studio oleh penulisnya (lingkungan pembuatan tidak punya Studio). Jalankan checklist di [docs/04-instalasi-pengujian.md](docs/04-instalasi-pengujian.md) sebelum mengandalkannya.
 
+## Delta Android (client-only)
+
+Versi siap-tempel untuk Delta Android tersedia di [`standalone/Delta.lua`](standalone/Delta.lua). Jalankan saat sudah berada di dalam game. Lihat [`standalone/README.md`](standalone/README.md) untuk cara pakai dan batasan client-only.
+
 ## Dokumen
 
 | Bagian | File |
