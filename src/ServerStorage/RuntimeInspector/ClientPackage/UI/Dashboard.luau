@@ -29,6 +29,7 @@ local TABS = {
 	{ id = "network", label = "Network Monitor", module = "NetworkTab" },
 	{ id = "security", label = "Security Audit", module = "SecurityTab" },
 	{ id = "export", label = "Export Center", module = "ExportTab" },
+	{ id = "quick", label = "Quick Execute", module = "QuickExecuteTab" },
 }
 
 function Dashboard.new(gui: ScreenGui, agent: any)
